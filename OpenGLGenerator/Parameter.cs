@@ -6,14 +6,16 @@ using System.Threading.Tasks;
 
 namespace OpenGLGenerator {
     public class Parameter {
-        public string Name { get; private set; }
-        public string Type { get; private set; }
-        public string Group { get; private set; }
+        public string Name { get; set; }
+        public string Type { get; set; }
+        public string Group { get; set; }
+        public bool Pointer { get; set; }
 
-        public Parameter(string name, string type, string group) {
+        public Parameter(string name, string type, string group, bool pointer) {
             Name = name;
             Type = type;
             Group = group;
+            Pointer = pointer;
         }
     }
 }

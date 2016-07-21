@@ -4,15 +4,15 @@ using System.Xml;
 
 namespace OpenGLGenerator {
     public class Spec {
-        public List<Group> Groups { get; private set; }
+        public List<Group> Groups { get; set; }
 
-        public List<EnumList> Enums { get; private set; }
-        public Dictionary<string, Enum> EnumMap { get; private set; }
+        public List<EnumList> Enums { get; set; }
+        public Dictionary<string, Enum> EnumMap { get; set; }
 
-        public List<Command> Commands { get; private set; }
-        public Dictionary<string, Command> CommandMap { get; private set; }
+        public List<Command> Commands { get; set; }
+        public Dictionary<string, Command> CommandMap { get; set; }
 
-        public List<Features> Features { get; private set; }
+        public List<Features> Features { get; set; }
 
         public Spec(XmlDocument doc) {
             Groups = new List<Group>();
@@ -136,15 +136,19 @@ namespace OpenGLGenerator {
             string name = node["name"].InnerText;
             string type;
             string group = node.Attributes["group"]?.Value;
+            bool pointer = false;
 
             XmlNode ptype = node["ptype"];
-            XmlAttribute len = node.Attributes["len"];
-            if (ptype == null || (len != null)) {
+            if (ptype == null) {
                 type = "void*";
             } else {
                 type = ptype.InnerText;
+                if (node.InnerText.Contains("*")) {
+                    type += '*';
+                    pointer = true;
+                }
             }
-            return new Parameter(name, type, group);
+            return new Parameter(name, type, group, pointer);
         }
 
         void AddFeatures(XmlNode root) {

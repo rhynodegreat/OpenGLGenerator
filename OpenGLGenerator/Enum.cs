@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace OpenGLGenerator {
     public class EnumList {
-        public string Name { get; private set; }
-        //public string Group { get; private set; }
-        //public string Namespace { get; private set; }
-        //public string Vendor { get; private set; }
-        public List<Enum> Values { get; private set; }
+        public string Name { get; set; }
+        //public string Group { get; set; }
+        //public string Namespace { get; set; }
+        //public string Vendor { get; set; }
+        public List<Enum> Values { get; set; }
 
         public EnumList(string name) {
             Name = name;
@@ -19,8 +19,8 @@ namespace OpenGLGenerator {
     }
 
     public class Enum {
-        public string Name { get; private set; }
-        public string Value { get; private set; }
+        public string Name { get; set; }
+        public string Value { get; set; }
 
         public Enum(string name, string value) {
             Name = name;

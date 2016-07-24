@@ -4,32 +4,86 @@ using System.Xml;
 
 namespace OpenGLGenerator {
     public class Spec {
-        public List<Group> Groups { get; set; }
+        public List<Group> Groups { get; private set; }
+        
+        public Dictionary<string, Enum> EnumMap { get; private set; }
 
-        public List<EnumList> Enums { get; set; }
-        public Dictionary<string, Enum> EnumMap { get; set; }
+        public List<Command> Commands { get; private set; }
+        public Dictionary<string, Command> CommandMap { get; private set; }
 
-        public List<Command> Commands { get; set; }
-        public Dictionary<string, Command> CommandMap { get; set; }
+        public string API { get; private set; }
+        public string Profile { get; private set; }
+        public int Major { get; private set; }
+        public int Minor { get; private set; }
 
-        public List<Features> Features { get; set; }
+        public HashSet<string> IncludedEnums { get; private set; }
+        public HashSet<string> IncludedCommands { get; private set; }
 
-        public Spec(XmlDocument doc) {
+        public Spec(XmlDocument doc, string api, string profile, int major, int minor) {
+            API = api;
+            Profile = profile;
+            Major = major;
+            Minor = minor;
+
             Groups = new List<Group>();
-
-            Enums = new List<EnumList>();
+            
             EnumMap = new Dictionary<string, Enum>();
 
             Commands = new List<Command>();
             CommandMap = new Dictionary<string, Command>();
 
-            Features = new List<Features>();
+            IncludedCommands = new HashSet<string>();
+            IncludedEnums = new HashSet<string>();
 
             XmlNode root = doc.ChildNodes[1];
             Load(root);
         }
 
+        void ResolveFeatures(XmlNode root) {
+            for (int i = 0; i < root.ChildNodes.Count; i++) {
+                var node = root.ChildNodes[i];
+
+                if (node.Name != "feature") continue;
+                if (node.Attributes["api"].Value != API) continue;
+                string[] tokens = node.Attributes["number"].Value.Split('.');
+                int maj = int.Parse(tokens[0]);
+                int min = int.Parse(tokens[1]);
+                if ((min > Minor && maj == Major) || maj > Major) {
+                    continue;
+                }
+
+                for (int j = 0; j < node.ChildNodes.Count; j++) {
+                    var r = node.ChildNodes[j];
+                    if (r is XmlComment) continue;
+                    string profile = r.Attributes["profile"]?.Value;
+
+                    if (profile != null && profile != Profile) continue;
+
+                    for (int k = 0; k  < r.ChildNodes.Count; k++) {
+                        var f = r.ChildNodes[k];
+
+                        if (f is XmlComment) continue;
+
+                        if (r.Name == "require") {
+                            if (f.Name == "enum") {
+                                IncludedEnums.Add(f.Attributes["name"].Value);
+                            } else if (f.Name == "command") {
+                                IncludedCommands.Add(f.Attributes["name"].Value);
+                            }
+                        } else {
+                            if (f.Name == "enum") {
+                                IncludedEnums.Remove(f.Attributes["name"].Value);
+                            } else if (f.Name == "command") {
+                                IncludedCommands.Remove(f.Attributes["name"].Value);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         void Load(XmlNode root) {
+            ResolveFeatures(root);
             for (int i = 0; i < root.ChildNodes.Count; i++) {
                 XmlNode node = root.ChildNodes[i];
                 string name = node.Name;
@@ -42,9 +96,6 @@ namespace OpenGLGenerator {
                         break;
                     case "commands":
                         LoadCommands(node);
-                        break;
-                    case "feature":
-                        AddFeatures(node);
                         break;
                 }
             }
@@ -74,23 +125,22 @@ namespace OpenGLGenerator {
             string _namespace = root.Attributes["namespace"]?.Value;
             
             EnumList list = new EnumList(group);
-            Enums.Add(list);
 
             for (int i = 0; i < root.ChildNodes.Count; i++) {
                 XmlNode node = root.ChildNodes[i];
                 if (node is XmlComment) continue;
                 if (node.Name == "unused") continue;
+
                 string eName = node.Attributes["name"].Value;
+
+                if (!IncludedEnums.Contains(eName)) continue;
+
                 string eValue = node.Attributes["value"].Value;
                 Enum e = new Enum(eName, eValue);
                 list.Values.Add(e);
-                if (EnumMap.ContainsKey(eName)) {
-                    if (!(EnumMap[eName].Value == e.Value)) {
-                        Console.WriteLine("ENUM DEFINED TWICE: {0}", eName);
-                    }
-                } else {
+                if (!EnumMap.ContainsKey(eName)) {
                     string api = node.Attributes["api"]?.Value;
-                    if (api == null || api == "gl") {
+                    if (api == null || api == API) {
                         EnumMap.Add(eName, e);
                     }
                 }
@@ -137,52 +187,26 @@ namespace OpenGLGenerator {
             string type;
             string group = node.Attributes["group"]?.Value;
             bool pointer = false;
+            bool _const = false;
+            int levels = 0;
 
             XmlNode ptype = node["ptype"];
+            string len = node.Attributes["len"]?.Value;
             if (ptype == null) {
                 type = "void*";
             } else {
                 type = ptype.InnerText;
-                if (node.InnerText.Contains("*")) {
-                    type += '*';
-                    pointer = true;
+                string search = node.InnerText;
+                foreach (char c in search) {
+                    if (c == '*') {
+                        type += c;
+                        levels++;
+                        pointer = true;
+                    }
                 }
             }
-            return new Parameter(name, type, group, pointer);
-        }
-
-        void AddFeatures(XmlNode root) {
-            string api = root.Attributes["api"].Value;
-            string version = root.Attributes["name"].Value;
-            string number = root.Attributes["number"].Value;
-
-            Features features = new Features(api, version, number);
-            for (int i = 0; i < root.ChildNodes.Count; i++) {
-                XmlNode action = root.ChildNodes[i];
-                if (action is XmlComment) continue;
-                string name = action.Name;
-                string profile = action.Attributes["profile"]?.Value;
-                FeatureList fl = new FeatureList(name, profile);
-                AddFeatures(action, fl);
-                features.Lists.Add(fl);
-            }
-
-            Features.Add(features);
-        }
-
-        void AddFeatures(XmlNode node, FeatureList list) {
-            for (int i = 0; i < node.ChildNodes.Count; i++) {
-                XmlNode feature = node.ChildNodes[i];
-                if (feature is XmlComment) continue;
-                string name = feature.Attributes["name"].Value;
-                FeatureType type;
-                if (feature.Name == "command") {
-                    type = FeatureType.Command;
-                } else {
-                    type = FeatureType.Enum;
-                }
-                list.List.Add(new Feature(type, name));
-            }
+            if (node.InnerText.Contains("const")) _const = true;
+            return new Parameter(name, type, group, len, pointer, _const, levels);
         }
     }
 }

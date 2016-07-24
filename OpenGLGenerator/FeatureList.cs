@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace OpenGLGenerator {
     public class Features {
-        public string API { get; set; }
-        public string Name { get; set; }
-        public int VersionMajor { get; set; }
-        public int VersionMinor { get; set; }
-        public List<FeatureList> Lists { get; set; }
+        public string API { get; private set; }
+        public string Name { get; private set; }
+        public int VersionMajor { get; private set; }
+        public int VersionMinor { get; private set; }
+        public List<FeatureList> Lists { get; private set; }
 
         public Features(string api, string name, string number) {
             API = api;
@@ -20,9 +20,9 @@ namespace OpenGLGenerator {
     }
 
     public class FeatureList {
-        public string Profile { get; set; }
-        public string Action { get; set; }
-        public List<Feature> List { get; set; }
+        public string Profile { get; private set; }
+        public string Action { get; private set; }
+        public List<Feature> List { get; private set; }
 
         public FeatureList(string action,string profile) {
             Profile = profile;
@@ -32,8 +32,8 @@ namespace OpenGLGenerator {
     }
 
     public class Feature {
-        public FeatureType Type { get; set; }
-        public string Name { get; set; }
+        public FeatureType Type { get; private set; }
+        public string Name { get; private set; }
 
         public Feature(FeatureType type, string name) {
             Type = type;

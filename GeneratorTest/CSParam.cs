@@ -10,7 +10,17 @@ namespace GeneratorTest {
         public ParamType ParamType { get; set; } = ParamType.Normal;
         public CSCommand Command { get; set; }
         public int HardcodedLength { get; set; } = -1;
-        public string Group { get; set; }
+
+        string group;
+        public string Group {
+            get {
+                return group;
+            }
+            set {
+                Type = value;
+                group = value;
+            }
+        }
 
         public CSParam(CSCommand command, Parameter par) {
             Command = command;
@@ -31,7 +41,7 @@ namespace GeneratorTest {
                         ParamType = ParamType.Normal;
                         Type = "string";
                     } else {
-                        ParamType = ParamType.Array;
+                        ParamType = ParamType.Normal;
                         Type = "StringBuilder";
                     }
                 } else {

@@ -12,7 +12,7 @@ namespace GeneratorTest {
 
         public CSCommand(Command c) {
             Name = c.Name;
-            ReturnType = c.ReturnType;
+            ReturnType = GetType(c.ReturnType);
             ReturnGroup = c.ReturnGroup;
             Parameters = new List<CSParam>(c.Parameters.Count);
 
@@ -28,6 +28,13 @@ namespace GeneratorTest {
                 }
             }
             return null;
+        }
+
+        string GetType(string input) {
+            switch (input) {
+                case "void*": return "IntPtr";
+                default: return input;
+            }
         }
     }
 }

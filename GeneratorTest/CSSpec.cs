@@ -8,11 +8,13 @@ namespace GeneratorTest {
         Spec spec;
         public List<CSEnum> Enums { get; set; }
         public List<CSCommand> Commands { get; set; }
+        public Dictionary<string, CSCommand> CommandMap { get; private set; }
 
         public CSSpec(Spec spec) {
             this.spec = spec;
             Enums = new List<CSEnum>();
             Commands = new List<CSCommand>();
+            CommandMap = new Dictionary<string, CSCommand>();
 
             LoadEnums(spec);
             LoadCommands(spec);
@@ -22,7 +24,9 @@ namespace GeneratorTest {
             foreach (var c in spec.Commands) {
                 if (!spec.IncludedCommands.Contains(c.Name)) continue;
 
-                Commands.Add(new CSCommand(c));
+                var csc = new CSCommand(c);
+                Commands.Add(csc);
+                CommandMap.Add(csc.Name, csc);
             }
         }
 

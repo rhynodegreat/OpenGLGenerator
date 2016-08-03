@@ -163,6 +163,7 @@ namespace OpenGLGenerator {
             XmlNode ptype = node["proto"]["ptype"];
             if (ptype == null) {
                 returnType = "void";
+                if (node["proto"].InnerText.Contains("*")) returnType += "*";
             } else {
                 returnType = ptype.InnerText;
             }
